@@ -80,6 +80,46 @@ def cbc_decrypt(ciphertext_h, key_h):
     
     return bin2hex(unpad_pkcs5(b''.join(output)))
 
+
+def ctr_encrypt(plaintext_h, key_h):
+    nonce = Random.new().read(AES.block_size / 2)
+    counter = b'\x00' * (AES.block_size / 2)
+
+    plaintext_b = hex2bin(plaintext_h)
+    key_b = hex2bin(key_h)
+    cipher = AES.new(key_b, AES.MODE_ECB)
+
+    def step(nonce, counter, chunk):
+        encrypted = cipher.encrypt(nonce + counter)
+        return (nonce, counter + 1, xor(chunk, encrypted))
+
+    output = [nonce + counter]
+    for inchunk in split_into_chunks(plaintext_b, AES.block_size):
+        nonce, counter, encrypted = step(nonce, counter, encrypted)
+        output.append(encrypted)
+
+    return b''.join(output)
+
+def ctr_decrypt(ciphertext_h, key_h):
+    ciphertext_b = hex2bin(ciphertext_h)
+    key_b = hex2bin(key_h)
+    chunks = split_into_chunks(ciphertext_b, AES.block_size)
+    nonce_and_counter = chunks.pop(0)
+    cipher = AES.new(key_b, AES.MODE_ECB)
+
+    def step(nonce_and_counter, chunk):
+        decrypted = xor(cipher.encrypt(nonce_and_counter), chunk)
+        return (nonce_and_counter + 1, decrypted)
+
+    output = []
+    for inchunk in chunks:
+        nonce_and_counter, outchunk = step(nonce_and_counter, inchunk)
+        output.append(outchunk)
+
+    return b''.join(output)
+    
+    
+
 # cbc_decrypt('4ca00ff4c898d61e1edbf1800618fb2828a226d160dad07883d04e008a7897ee2e4b7465d5290d0c0e6c6822236e1daafb94ffe0c5da05d9476be028ad7c1d81', '140b41b22a29beb4061bda66b6747e14')
 # cbc_decrypt('5b68629feb8606f9a6667670b75b38a5b4832d0f26e1ab7da33249de7d4afc48e713ac646ace36e872ad5fb8a512428a6e21364b0c374df45503473c5242a253', '140b41b22a29beb4061bda66b6747e14')
 # ctr_decrypt('69dda8455c7dd4254bf353b773304eec0ec7702330098ce7f7520d1cbbb20fc388d1b0adb5054dbd7370849dbf0b88d393f252e764f1f5f7ad97ef79d59ce29f5f51eeca32eabedd9afa9329', '36f18357be4dbd77f050515c73fcf9f2')
