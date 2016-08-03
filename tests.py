@@ -40,3 +40,11 @@ def test_split_into_chunks():
                 assert(len(c) <= chunk_size)
             else:
                 assert(len(c) == chunk_size)
+
+def test_encrypt_decrypt():
+    for _ in xrange(1000):
+        length = rand.randint(1, 1000)
+        key = bin2hex(random.read(16))
+        plaintext = bin2hex(random.read(length))
+
+        assert(cbc_decrypt(cbc_encrypt(plaintext, key), key) == plaintext)

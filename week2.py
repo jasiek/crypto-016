@@ -49,8 +49,8 @@ def cbc_encrypt(plaintext_h, key_h):
 
     def step(to_xor, inchunk):
         xored = xor(inchunk, to_xor)
-        to_xor = encrypted = cipher.encrypt(xored)
-        return (to_xor, encrypted)
+        encrypted = cipher.encrypt(xored)
+        return (encrypted, encrypted)
     
     output = [iv_b]
     to_xor = iv_b
@@ -69,9 +69,8 @@ def cbc_decrypt(ciphertext_h, key_h):
 
     def step(to_xor, inchunk):
         unxored = cipher.decrypt(inchunk)
-        outchunk = xor(inchunk, to_xor)
-        to_xor = inchunk
-        return (to_xor, outchunk)
+        outchunk = xor(unxored, to_xor)
+        return (inchunk, outchunk)
 
     output = []
     to_xor = iv_b
@@ -80,14 +79,6 @@ def cbc_decrypt(ciphertext_h, key_h):
         output.append(outchunk)
     
     return bin2hex(unpad_pkcs5(b''.join(output)))
-
-plaintext = '12' * 109
-
-print plaintext
-encrypted = cbc_encrypt(plaintext, 'ff' * 16)
-print encrypted
-decrypted = cbc_decrypt(encrypted, 'ff' * 16)
-print decrypted
 
 # cbc_decrypt('4ca00ff4c898d61e1edbf1800618fb2828a226d160dad07883d04e008a7897ee2e4b7465d5290d0c0e6c6822236e1daafb94ffe0c5da05d9476be028ad7c1d81', '140b41b22a29beb4061bda66b6747e14')
 # cbc_decrypt('5b68629feb8606f9a6667670b75b38a5b4832d0f26e1ab7da33249de7d4afc48e713ac646ace36e872ad5fb8a512428a6e21364b0c374df45503473c5242a253', '140b41b22a29beb4061bda66b6747e14')
