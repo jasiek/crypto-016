@@ -1,7 +1,8 @@
 from Crypto.Cipher import AES
 from Crypto import Random
 import bitstring
-import textwrap
+
+import pdb
 
 def hex2bin(hexstring):
     return bitstring.Bits(hex=hexstring).bytes
@@ -21,14 +22,24 @@ def pad_pkcs5(binstring):
     return binstring + padding
 
 def unpad_pkcs5(binstring):
-    last_block = binstring[-AES.block_size:]
-    to_pad = ord(last_block[-1])
-    padding = chr(to_pad) * to_pad
-    if last_block[AES.block_size - to_pad:] == padding:
-        return binstring[0:-to_pad]
-    else:
+    if len(binstring) == 0:
         return binstring
+    else:
+        last_block = binstring[-AES.block_size:]
+        to_pad = ord(last_block[-1])
+        padding = chr(to_pad) * to_pad
+        if last_block[AES.block_size - to_pad:] == padding:
+            return binstring[0:-to_pad]
+        else:
+            return binstring
 
+def split_into_chunks(binstring, size):
+    chunks = []
+    while len(binstring) > 0:
+        chunks.append(binstring[0:size])
+        binstring = binstring[size:]
+    return chunks
+        
 def cbc_encrypt(plaintext_h, key_h):
     iv_b = Random.new().read(AES.block_size)
     plaintext_b = hex2bin(plaintext_h)
@@ -41,9 +52,9 @@ def cbc_encrypt(plaintext_h, key_h):
         to_xor = encrypted = cipher.encrypt(xored)
         return (to_xor, encrypted)
     
-    output = []
+    output = [iv_b]
     to_xor = iv_b
-    for inchunk in textwrap.wrap(padded_plaintext_b, AES.block_size):
+    for inchunk in split_into_chunks(padded_plaintext_b, AES.block_size):
         to_xor, outchunk = step(to_xor, inchunk)
         output.append(outchunk)
 
@@ -52,7 +63,7 @@ def cbc_encrypt(plaintext_h, key_h):
 def cbc_decrypt(ciphertext_h, key_h):
     ciphertext_b = hex2bin(ciphertext_h)
     key_b = hex2bin(key_h)
-    chunks = textwrap.wrap(ciphertext_b, AES.block_size)
+    chunks = split_into_chunks(ciphertext_b, AES.block_size)
     iv_b = chunks.pop(0)
     cipher = AES.new(key_b, AES.MODE_ECB)
 
@@ -70,12 +81,12 @@ def cbc_decrypt(ciphertext_h, key_h):
     
     return bin2hex(unpad_pkcs5(b''.join(output)))
 
-plaintext = '12' * 16
-encrypted = cbc_encrypt(plaintext, 'ff' * 16)
-decrypted = cbc_decrypt(encrypted, 'ff' * 16)
+plaintext = '12' * 109
 
 print plaintext
+encrypted = cbc_encrypt(plaintext, 'ff' * 16)
 print encrypted
+decrypted = cbc_decrypt(encrypted, 'ff' * 16)
 print decrypted
 
 # cbc_decrypt('4ca00ff4c898d61e1edbf1800618fb2828a226d160dad07883d04e008a7897ee2e4b7465d5290d0c0e6c6822236e1daafb94ffe0c5da05d9476be028ad7c1d81', '140b41b22a29beb4061bda66b6747e14')

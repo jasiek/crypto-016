@@ -1,5 +1,9 @@
 import pytest
+from Crypto import Random
+from Crypto.Random import random as rand
 from week2 import *
+
+random = Random.new()
 
 def test_hex2bin():
     assert(hex2bin('00') == b'\x00')
@@ -20,6 +24,19 @@ def test_pad_pkcs5():
     assert(pad_pkcs5(b'z' * 16) == b'z' * 16 + chr(16) * 16)
 
 def test_pad_unpad_pkcs5():
-    for i in range(256):
-        string = b'z' * i
-        assert(unpad_pkcs5(pad_pkcs5(string)) == string)
+    for _ in xrange(1000):
+        length = rand.randint(0, 1000)
+        random_string = random.read(length)
+        assert(unpad_pkcs5(pad_pkcs5(random_string)) == random_string)
+
+def test_split_into_chunks():
+    for _ in xrange(1000):
+        whole_size = rand.randint(100, 10000)
+        chunk_size = rand.randint(1, 100)
+        random_string = random.read(whole_size)
+        chunks = split_into_chunks(random_string, chunk_size)
+        for c in chunks:
+            if c == chunks[-1]:
+                assert(len(c) <= chunk_size)
+            else:
+                assert(len(c) == chunk_size)
