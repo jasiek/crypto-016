@@ -50,7 +50,7 @@ def cbc_encrypt(plaintext_h, key_h):
     return bin2hex(b''.join(output))
     
 def cbc_decrypt(ciphertext_h, key_h):
-    ciphertext_b = bin2hex(ciphertext_h)
+    ciphertext_b = hex2bin(ciphertext_h)
     key_b = hex2bin(key_h)
     chunks = textwrap.wrap(ciphertext_b, AES.block_size)
     iv_b = chunks.pop(0)
