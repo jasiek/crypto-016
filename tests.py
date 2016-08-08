@@ -55,4 +55,16 @@ def test_encrypt_decrypt_ctr():
         key = bin2hex(random.read(16))
         plaintext = bin2hex(random.read(length))
 
-        assert(ctr_decrypt(ctr_encrypt(plaintext, key), key) == plaintext)
+        ciphertext = ctr_encrypt(plaintext, key)
+        decrypted = ctr_decrypt(ciphertext, key)
+        assert(len(decrypted) == len(plaintext))
+        assert(decrypted == plaintext)
+
+def test_increment():
+    a = '\x00' * 16
+    b = increment(a)
+    assert(b == '\x00' * 15 + '\x01')
+
+    a = '\xff' * 16
+    b = increment(a)
+    assert(b == '\x00' * 16)

@@ -81,24 +81,31 @@ def cbc_decrypt(ciphertext_h, key_h):
     return bin2hex(unpad_pkcs5(b''.join(output)))
 
 
+def increment(ctr):
+    ctr_b = bitstring.Bits(bytes=ctr)
+    i = (ctr_b.uint + 1) % 2 ** (AES.block_size * 8)
+    return bitstring.Bits(uint=i, length=AES.block_size * 8).bytes
+
 def ctr_encrypt(plaintext_h, key_h):
     nonce = Random.new().read(AES.block_size / 2)
     counter = b'\x00' * (AES.block_size / 2)
 
     plaintext_b = hex2bin(plaintext_h)
+    padded_plaintext_b = pad_pkcs5(plaintext_b)
     key_b = hex2bin(key_h)
     cipher = AES.new(key_b, AES.MODE_ECB)
 
-    def step(nonce, counter, chunk):
-        encrypted = cipher.encrypt(nonce + counter)
-        return (nonce, counter + 1, xor(chunk, encrypted))
+    def step(nonce_and_counter, chunk):
+        encrypted = cipher.encrypt(nonce_and_counter)
+        return (increment(nonce_and_counter), xor(chunk, encrypted))
 
-    output = [nonce + counter]
-    for inchunk in split_into_chunks(plaintext_b, AES.block_size):
-        nonce, counter, encrypted = step(nonce, counter, encrypted)
+    nonce_and_counter = nonce + counter
+    output = [nonce_and_counter]
+    for inchunk in split_into_chunks(padded_plaintext_b, AES.block_size):
+        nonce_and_counter, encrypted = step(nonce_and_counter, inchunk)
         output.append(encrypted)
 
-    return b''.join(output)
+    return bin2hex(b''.join(output))
 
 def ctr_decrypt(ciphertext_h, key_h):
     ciphertext_b = hex2bin(ciphertext_h)
@@ -109,14 +116,14 @@ def ctr_decrypt(ciphertext_h, key_h):
 
     def step(nonce_and_counter, chunk):
         decrypted = xor(cipher.encrypt(nonce_and_counter), chunk)
-        return (nonce_and_counter + 1, decrypted)
+        return (increment(nonce_and_counter), decrypted)
 
     output = []
     for inchunk in chunks:
         nonce_and_counter, outchunk = step(nonce_and_counter, inchunk)
         output.append(outchunk)
-
-    return b''.join(output)
+        
+    return bin2hex(unpad_pkcs5(b''.join(output)))
     
     
 
@@ -124,5 +131,3 @@ def ctr_decrypt(ciphertext_h, key_h):
 # cbc_decrypt('5b68629feb8606f9a6667670b75b38a5b4832d0f26e1ab7da33249de7d4afc48e713ac646ace36e872ad5fb8a512428a6e21364b0c374df45503473c5242a253', '140b41b22a29beb4061bda66b6747e14')
 # ctr_decrypt('69dda8455c7dd4254bf353b773304eec0ec7702330098ce7f7520d1cbbb20fc388d1b0adb5054dbd7370849dbf0b88d393f252e764f1f5f7ad97ef79d59ce29f5f51eeca32eabedd9afa9329', '36f18357be4dbd77f050515c73fcf9f2')
 # ctr_decrypt('770b80259ec33beb2561358a9f2dc617e46218c0a53cbeca695ae45faa8952aa0e311bde9d4e01726d3184c34451', '36f18357be4dbd77f050515c73fcf9f2')
-                       
-
